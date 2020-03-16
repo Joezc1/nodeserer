@@ -7,6 +7,7 @@ const app = express()
 
 // 生成token时的秘钥
 app.set('secret','i2iwiwi23i2')
+
 // 解析body参数
 const bodyParser = require('body-parser')
 const jsonParser = bodyParser.json()

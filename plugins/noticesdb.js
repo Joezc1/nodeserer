@@ -19,10 +19,10 @@ module.exports = {
         console.log(notice)
         if(notice.createtime==""){
             console.log("进来1")
-            sql = 'select id,title,detail,createtime,updatetime,author,video,type from notices where id like "%'+notice.id+'%" and title like "%'+notice.title+'%" and author like "%'+notice.author+'%"'+ 'limit '+x+','+y;
+            sql = 'select id,title,detail,createtime,updatetime,author,video,type,cover from notices where id like "%'+notice.id+'%" and title like "%'+notice.title+'%" and author like "%'+notice.author+'%"'+ 'limit '+x+','+y;
         }else{
             console.log("进来2")
-            sql = 'select id,title,detail,createtime,updatetime,author,video,type from notices where id like "%'+notice.id+'%" and title like "%'+notice.title+'%" and author like "%'+notice.author+'%" and createtime>'+'"'+notice.createtime+'" '+ 'limit '+x+','+y;
+            sql = 'select id,title,detail,createtime,updatetime,author,video,type,cover from notices where id like "%'+notice.id+'%" and title like "%'+notice.title+'%" and author like "%'+notice.author+'%" and createtime>'+'"'+notice.createtime+'" '+ 'limit '+x+','+y;
         }
         console.log('打印查询语句')
         console.log(sql)
@@ -57,10 +57,10 @@ module.exports = {
         console.log(notice)
         if(notice.createtime==""){
             console.log("进来1")
-            sql = 'select id,title,detail,createtime,updatetime,author,video,type from notices where id like "%'+notice.id+'%" and title like "%'+notice.title+'%" and author like "%'+notice.author+'%"'+" and type=1 "+'limit '+x+','+y;
+            sql = 'select id,title,detail,createtime,updatetime,author,video,type,cover from notices where id like "%'+notice.id+'%" and title like "%'+notice.title+'%" and author like "%'+notice.author+'%"'+" and type=1 "+'limit '+x+','+y;
         }else{
             console.log("进来2")
-            sql = 'select id,title,detail,createtime,updatetime,author,video,type from notices where id like "%'+notice.id+'%" and title like "%'+notice.title+'%" and author like "%'+notice.author+'%" and createtime>'+'"'+notice.createtime+'" '+ 'limit '+x+','+y;
+            sql = 'select id,title,detail,createtime,updatetime,author,video,type,cover from notices where id like "%'+notice.id+'%" and title like "%'+notice.title+'%" and author like "%'+notice.author+'%" and createtime>'+'"'+notice.createtime+'" '+ 'limit '+x+','+y;
         }
         console.log('打印查询语句')
         console.log(sql)
@@ -122,7 +122,7 @@ module.exports = {
     //根据id查询公告信息
     findById: function (id, params, callback) {
         //每次使用的时候需要创建链接，数据操作完成之后要关闭连接
-        let sql = `select id,title,detail,createtime,updatetime,video,author,type from notices where id=${id}`
+        let sql = `select id,title,detail,createtime,updatetime,video,author,type,cover from notices where id=${id}`
         var connection = mysql.createConnection(data);
         connection.connect(function (err) {
             if (err) {
@@ -152,7 +152,7 @@ module.exports = {
     insert: function (notice, params, callback) {
         //每次使用的时候需要创建链接，数据操作完成之后要关闭连接
         // let sql = `insert into notices(title,detail,createtime,author) values`
-        let sql = "insert into notices(title,detail,createtime,updatetime,author,video,type) values('" + notice.title + "','" + notice.detail + "','" + notice.createtime + "','"+notice.updatetime+"','" + notice.author + "','" + notice.video +"','" + notice.type +"')"
+        let sql = "insert into notices(title,detail,createtime,updatetime,author,video,type,cover) values('" + notice.title + "','" + notice.detail + "','" + notice.createtime + "','"+notice.updatetime+"','" + notice.author + "','" + notice.video +"','" + notice.type + "','" + notice.cover +"')"
         console.log("打印操作结果")
         console.log(sql)
         var connection = mysql.createConnection(data);
@@ -212,7 +212,7 @@ module.exports = {
     // 修改公告信息
     updateById: function (notice,id, params, callback) {
         //每次使用的时候需要创建链接，数据操作完成之后要关闭连接
-        let sql = "update notices set title='" + notice.title + "',detail=" + "'" + notice.detail + "',createtime=" + "'" +notice.createtime + "',updatetime="+"'"+notice.updatetime+ "',author=" + "'" + notice.author+ "',video=" + "'" + notice.video + "',type=" + "'" + notice.type + "' where id =" + id
+        let sql = "update notices set title='" + notice.title + "',detail=" + "'" + notice.detail + "',createtime=" + "'" +notice.createtime + "',updatetime="+"'"+notice.updatetime+ "',author=" + "'" + notice.author+ "',video=" + "'" + notice.video + "',type=" + "'" + notice.type+ "',cover=" + "'" + notice.cover + "' where id =" + id
         console.log("修改公告")
         console.log(sql)
         var connection = mysql.createConnection(data);
