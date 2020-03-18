@@ -17,7 +17,7 @@ module.exports = {
         //每次使用的时候需要创建链接，数据操作完成之后要关闭连接
         let sql =""
         console.log(answer)
-        sql = 'select id,abstract,agree,createtime,thanks,comments,answer,topicid,userid from answers where topicid ='+answer.topicid+' and title like "%'+answer.title+'%"'+ ' limit '+x+','+y;
+        sql = 'select id,abstract,agree,createtime,thanks,comments,answer,topicid,userid from answers where topicid ='+answer.topicid+" limit "+x+","+y;
         console.log('打印查询语句')
         console.log(sql)
         var connection = mysql.createConnection(data);

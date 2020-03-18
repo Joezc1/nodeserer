@@ -275,6 +275,40 @@ module.exports = app => {
     })
 
     //数据分析
+    // 后台用户管理
+     //公告管理，公告列表
+     router.post('/admin/user/list', (req, res) => {
+        let x = (req.body.pageNo - 1) * req.body.pageSize
+        let y = req.body.pageSize
+        adminuserdb.find(x, y, [], (dbresult, fields) => {
+            adminuserdb.findCount('username', [], (result, fields) => {
+                let data = {}
+                let list = []
+                for (let index in result[0]) {
+                    list.push(result[0][index])
+                }
+                data.pageCount = list[0]
+                data.success = true
+                data.msg = '查询成功'
+                data.list = dbresult
+                data.pageNo = req.body.pageNo
+                data.pageSize = req.body.pageSize
+                res.send({ 'data': data })
+            })
+        })
+    })
+    // router.post('/admin/user/list',(req,res) => {
+    //     let x = (req.body.pageNo - 1) * req.body.pageSize
+    //     let y = req.body.pageSize
+    //     adminuserdb.find(x,y,[],(result,fields)=> {
+    //         let data = {}
+    //         data.success = true
+    //         data.msg = "查询成功"
+    //         data.list = result
+    //         res.send(data)
+    //     })
+    // })
+    
     //用户管理
     router.post('/user/:id', [], (req, res) => {
         userdb.findById(req.params.id, [], (dbresult, fields) => {
@@ -350,8 +384,6 @@ module.exports = app => {
     //})
 
     app.use('/admin/api', (req, res, next) => {
-        console.log("打印req.url")
-        console.log(req.url)
         if (req.url != '/admin/user/login' && req.url != '/user/register' && req.url != '/upload') {
             let token = req.headers.token;
             // let jwt = new JwtUtil(token);
@@ -380,8 +412,8 @@ module.exports = app => {
     app.post('/admin/api/upload', upload.single('file'), async (req, res) => {
         console.log("监听图片上传")
         const file = req.file
-        // file.url = `http://localhost:8080/uploads/${file.filename}`
-        file.url = `http://39.106.159.120:8080/uploads/${file.filename}`
+        file.url = `http://localhost:8080/uploads/${file.filename}`
+        // file.url = `http://39.106.159.120:8080/uploads/${file.filename}`
         res.send({ 'data': file })
     })
 

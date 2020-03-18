@@ -138,7 +138,7 @@ module.exports = app => {
   router.post('/answerlist', (req, res) => {
     let x = (req.body.pageNo - 1) * req.body.pageSize
     let y = req.body.pageSize
-    console.log("打印回答列表")
+    console.log("打印回答请求对象")
     console.log(req.body)
     answerdb.find(req.body, x, y, [], (dbresult, err) => {
       let data = {}
@@ -610,8 +610,8 @@ module.exports = app => {
   router.post('/upload', upload.single('file'), async (req, res) => {
     console.log("监听文件上传")
     const file = req.file
-    file.url = `http://39.106.159.120:8080/uploads/${file.filename}`
-    // file.url = `http://localhost:8080/uploads/${file.filename}`
+    // file.url = `http://39.106.159.120:8080/uploads/${file.filename}`
+    file.url = `http://localhost:8080/uploads/${file.filename}`
     res.send(file)
   })
 
