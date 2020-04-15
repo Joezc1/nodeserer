@@ -10,7 +10,7 @@ module.exports = app => {
     const topicsdb = require("../../plugins/topicsdb")
     const userdb = require("../../plugins/usersdb")
     const answerdb = require("../../plugins/answersdb")
-    const adminuserdb = require("../../plugins/adminuserdb")
+    const authoritydb = require("../../plugins/roledb")
 
 
     // 引入express-ws实现websocket
@@ -124,6 +124,8 @@ module.exports = app => {
         let x = (req.body.pageNo - 1) * req.body.pageSize
         let y = req.body.pageSize
         answerdb.find(req.body, x, y, [], (dbresult, fields) => {
+            console.log("打印查询结果")
+            console.log(dbresult)
             answerdb.findCount('id', [], (result, fields) => {
                 let data = {}
                 let list = []
@@ -274,14 +276,94 @@ module.exports = app => {
         })
     })
 
-    //数据分析
-    // 后台用户管理
-     //公告管理，公告列表
-     router.post('/admin/user/list', (req, res) => {
+    const adminuserdb = require("../../plugins/adminuserdb")
+    // 角色管理
+    // 用户登录
+    router.post('/admin/user/login', [], (req, res) => {
+        let user = req.body
+        adminuserdb.findByName(user.username, [], (result, error) => {
+            if (result[0]) {
+                console.log("打印登录用户")
+                console.log(user)
+                console.log(result[0])
+                if (user.password == result[0].password) {
+                    if (result[0].login == 1) {
+                        console.log("11111111111111")
+                        console.log("账号占用")
+                        let data = {}
+                        data.success = false
+                        data.msg = "该账号被占用"
+                        // 账号不存在
+                        data.code = -2
+                        return res.send(data)
+                    } else {
+                        console.log("22222222222222")
+                        console.log("用户已存在")
+                        // let jwt = new jwtUtil(user.name)
+                        let token = jwtUtil.generateToken(user.name)
+                        let data = {}
+                        data.userinfo = result[0]
+                        data.userinfo.login = 1
+                        adminuserdb.updateById(data.userinfo, data.userinfo.id, [], (r, f) => {
+
+                            authoritydb.findByLevel(data.userinfo.level,[],(ares,ff) => {
+                                data.menulist = ares
+                                data.success = true
+                                data.msg = '登陆成功'
+                                data.token = token
+                                res.send(data)
+                            })        
+                            // data.success = true
+                            // data.msg = '登陆成功'
+                            // data.token = token
+                            // res.send(data)                   
+                        })
+                    }
+                } else {
+                    console.log("33333333333333333")
+                    console.log("用户或密码错误")
+                    let data = {}
+                    data.success = false
+                    data.msg = '用户或密码错误'
+                    res.send(data)
+                }
+            } else {
+                console.log("444444444444444444444")
+                console.log("用户不存在")
+                let data = {}
+                data.success = false
+                data.msg = "该账号不存在"
+                // 账号不存在
+                data.code = -2
+                res.send(data)
+            }
+        })
+    })
+
+    // 用户退出登录
+    router.post('/admin/user/logout', [], (req, res) => {
+        console.log("退出登录")
+        console.log(req)
+        console.log(req.body)
+        adminuserdb.findById(req.body.userid, [], (r, f) => {
+            let user = r[0]
+            user.login = 0
+            adminuserdb.updateById(user, user.id, [], (result, fields) => {
+                let data = {}
+                data.msg = "退出成功",
+                data.code = 1
+                res.send(data)
+            })
+        })
+    })
+
+    //角色列表
+    router.post('/role/list', (req, res) => {
+        console.log("121212")
         let x = (req.body.pageNo - 1) * req.body.pageSize
         let y = req.body.pageSize
-        adminuserdb.find(x, y, [], (dbresult, fields) => {
-            adminuserdb.findCount('username', [], (result, fields) => {
+        adminuserdb.find(req.body, x, y, [], (dbresult, fields) => {
+            adminuserdb.findCount('id', [], (result, fields) => {
                 let data = {}
                 let list = []
                 for (let index in result[0]) {
@@ -297,6 +379,61 @@ module.exports = app => {
             })
         })
     })
+
+    //角色详情
+    router.post('/role/:id', [], (req, res) => {
+        adminuserdb.findById(req.params.id, [], (dbresult, fields) => {
+            let data = {}
+            data.success = true
+            data.msg = '查询成功',
+                data.data = dbresult[0]
+            res.send({ 'data': data })
+        })
+    })
+
+    //新建角色
+    router.post('/save/role', (req, res) => {
+        let notice = req.body
+        notice.createtime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        notice.updatetime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        console.log(notice)
+        console.log("打印notice")
+        adminuserdb.insert(notice, [], (dbresult, fields) => {
+            console.log("打印插入结果")
+            console.log(dbresult)
+            if (dbresult.affectedRows != 0) {
+                let data = {}
+                data.success = true
+                data.msg = "新建成功"
+                res.send({ 'data': data })
+            }
+        })
+    })
+    //删除角色
+    router.post('/delete/role/:id', [], (req, res) => {
+        adminuserdb.deleteById(req.params.id, [], (dbresult, fields) => {
+            if (dbresult.affectedRows != 0) {
+                let data = {}
+                data.success = true
+                data.msg = "删除成功"
+                res.send({ 'data': data })
+            }
+        })
+    })
+    //修改角色
+    router.post('/update/role/:id', [], (req, res) => {
+        req.body.updatetime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        adminuserdb.updateById(req.body, req.params.id, [], (dbresult, fields) => {
+            if (dbresult.affectedRows != 0) {
+                console.log(dbresult)
+                let data = {}
+                data.success = true
+                data.msg = "修改成功"
+                res.send({ 'data': data })
+            }
+
+        })
+    })
     // router.post('/admin/user/list',(req,res) => {
     //     let x = (req.body.pageNo - 1) * req.body.pageSize
     //     let y = req.body.pageSize
@@ -308,7 +445,7 @@ module.exports = app => {
     //         res.send(data)
     //     })
     // })
-    
+
     //用户管理
     router.post('/user/:id', [], (req, res) => {
         userdb.findById(req.params.id, [], (dbresult, fields) => {
@@ -320,57 +457,64 @@ module.exports = app => {
         })
     })
 
-    // 新增用户
-    // 修改用户信息
-    // 删除用户
-
-    // 用户登录
-    router.post('/admin/user/login', [], (req, res) => {
-        let user = req.body
-        adminuserdb.findByName(user.username, [], (result, error) => {
-            if (result[0]) {
-                console.log("打印登录用户")
-                console.log(user)
-                console.log(result[0])
-                if(user.password == result[0].password){
-                    console.log("用户已存在")
-                    // let jwt = new jwtUtil(user.name)
-                    let token = jwtUtil.generateToken(user.name)
-                    let data = {}
-                    data.userinfo = result[0]
-                    data.success = true
-                    data.msg = '登陆成功'
-                    data.token = token
-                    res.send(data)
-                }else{
-                    console.log("用户或密码错误")
-                    let data = {}
-                    data.success = false
-                    data.msg = '用户或密码错误'
-                    res.send(data)
-                }
-            } else {
-                console.log("用户不存在")
+      //用户列表管理
+      router.post('/wx/user/list', (req, res) => {
+        console.log("进来这里")
+        console.log(req.body)
+        let x = (req.body.pageNo - 1) * req.body.pageSize
+        let y = req.body.pageSize
+        userdb.find(req.body, x, y, [], (dbresult, fields) => {
+            userdb.findCount('userid', [], (result, fields) => {
                 let data = {}
-                data.success = false
-                data.msg = "该账号不存在"
-                // 账号不存在
-                data.code = -2
-                res.send(data)
+                let list = []
+                for (let index in result[0]) {
+                    list.push(result[0][index])
+                }
+                data.pageCount = list[0]
+                data.success = true
+                data.msg = '查询成功'
+                data.list = dbresult
+                data.pageNo = req.body.pageNo
+                data.pageSize = req.body.pageSize
+                res.send({ 'data': data })
+            })
+        })
+    })
+
+    //删除用户
+    router.post('/delete/user/:id', (req, res) => {
+        userdb.deleteById(req.params.id, [], (dbresult, fields) => {
+            if (dbresult.affectedRows != 0) {
+                let data = {}
+                data.success = true
+                data.msg = "删除成功"
+                res.send({ 'data': data })
             }
         })
     })
+    //修改用户信息
+    router.post('/update/user/:id', (req, res) => {
+        req.body.updatetime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        userdb.updateById(req.body, req.params.id, [], (dbresult, fields) => {
+            if (dbresult.affectedRows != 0) {
+                console.log(dbresult)
+                let data = {}
+                data.success = true
+                data.msg = "修改成功"
+                res.send({ 'data': data })
+            }
 
-
-    router.get('/categories/:id', (req, res) => {
-        db.query(`select * from test where id=${req.params.id}`, [], function (result, fields) {
-            console.log(req.params)
-            console.log(result)
-            res.send(result)
         })
-        // let params = req.query.params
-        // console.log(params)
     })
+
+    // 权限列表
+    router.post('/authority/list',(req,res) => {
+        authoritydb.findByLevel(level,[],(r,d) =>{
+
+        })
+    })
+
+
 
     // 验证token的请求
 
@@ -384,23 +528,24 @@ module.exports = app => {
     //})
 
     app.use('/admin/api', (req, res, next) => {
-        if (req.url != '/admin/user/login' && req.url != '/user/register' && req.url != '/upload') {
-            let token = req.headers.token;
-            // let jwt = new JwtUtil(token);
-            let result = jwtUtil.verifyToken(token);
-            console.log('token验证')
-            console.log(result)
-            // 如果考验通过就next，否则就返回登陆信息不正确
-            if (result == 'err') {
-                console.log(result);
-                res.send({success:false,status: 403, msg: '登录已过期,请重新登录' });
-                // res.render('login.html');
-            } else {
-                next();
-            }
-        } else {
-            next();
-        }
+        // if (req.url != '/admin/user/login' && req.url != '/admin/user/logout' && req.url != '/upload') {
+        //     let token = req.headers.token;
+        //     // let jwt = new JwtUtil(token);
+        //     let result = jwtUtil.verifyToken(token);
+        //     console.log('token验证')
+        //     console.log(result)
+        //     // 如果考验通过就next，否则就返回登陆信息不正确
+        //     if (result == 'err') {
+        //         console.log(result);
+        //         res.send({ success: false, status: 403, msg: '登录已过期,请重新登录' });
+        //         // res.render('login.html');
+        //     } else {
+        //         next();
+        //     }
+        // } else {
+        //     next();
+        // }
+        next()
     }, router)
 
 

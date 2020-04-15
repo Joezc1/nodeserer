@@ -22,6 +22,7 @@ module.exports = app => {
   const noticedb = require("../../plugins/noticesdb")
   const topicfollowdb = require("../../plugins/topicfollowdb")
   const userfollowdb = require("../../plugins/userfollowdb")
+  const tagdb = require("../../plugins/tagsdb")
 
   // 公共js
   const utiljs = require("../../utils/index")
@@ -38,7 +39,7 @@ module.exports = app => {
     // limit (${req.body.pageNo}-1)*${req.body.pageSize},${req.body.pageSize}
     let x = (req.body.pageNo - 1) * req.body.pageSize
     let y = req.body.pageSize
-    db.query(`SELECT a.id,a.title,a.heat,a.topiccover FROM topics As a order by a.heat DESC limit ${x},${y}`, [], function (dbresult, fields) {
+    db.query(`SELECT * FROM topics order by heat DESC limit ${x},${y}`, [], function (dbresult, fields) {
       //if(fields){
       //	res.send({message: "操作失败"})
       //}
@@ -51,7 +52,7 @@ module.exports = app => {
   router.post('/topics', (req, res) => {
     let x = (req.body.pageNo - 1) * req.body.pageSize
     let y = req.body.pageSize
-    let sql = `SELECT a.id,a.title,a.abstract,a.topic,a.heat,a.agree,a.comment,a.userid,a.follow,a.brower,a.topiccover,a.createtime,a.updatetime,a.userid,b.nickname,b.cover FROM topics AS a,users AS b WHERE a.userid=b.userid limit ${x},${y}`
+    let sql = `SELECT a.id,a.title,a.type,a.abstract,a.topic,a.heat,a.agree,a.comment,a.userid,a.follow,a.brower,a.topiccover,a.createtime,a.updatetime,a.userid,b.nickname,b.cover FROM topics AS a,users AS b WHERE a.userid=b.userid limit ${x},${y}`
     db.query(sql, [], function (dbresult, fields) {
       console.log("打印获取列表数据")
       console.log(sql)
@@ -111,23 +112,30 @@ module.exports = app => {
       res.send(data)
     })
   })
+
   // 新建话题
   router.post('/save/topic', (req, res) => {
     req.body.createtime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
     req.body.abstract = req.body.topic.substring(0, 20)
+    req.body.type = 2
     console.log("新建话题")
     console.log(req.body)
     topicdb.insert(req.body, [], (dbresult, fields) => {
-      let data = {}
-      data.success = 'true'
-      data.msg = '新建成功'
-      res.send(data)
+      console.log("打印操作结果")
+      // topicid变化的数值
+      console.log(dbresult.insertId)
+      tagdb.insert(req.body.tag,dbresult.insertId,req.body.userid,[],dbresult => {
+        let data = {}
+        data.success = 'true'
+        data.msg = '新建成功'
+        res.send(data)
+      })
     })
   })
   //查询话题详情
   router.post('/topic/:id', (req, res) => {
     console.log("打印id" + req.params.id)
-    db.query(`SELECT a.id,a.title,a.abstract,a.topic,a.heat,a.agree,a.comment,a.follow,a.brower,a.userid,a.topiccover,a.createtime,a.updatetime FROM topics AS a WHERE a.id=${req.params.id}`, [], (dbresult, fields) => {
+    db.query(`SELECT a.id,a.title,a.abstract,a.type,a.topic,a.heat,a.agree,a.comment,a.follow,a.brower,a.userid,a.topiccover,a.createtime,a.updatetime FROM topics AS a WHERE a.id=${req.params.id}`, [], (dbresult, fields) => {
       console.log(dbresult)
       res.send({ data: dbresult[0], success: true })
     })
@@ -221,11 +229,11 @@ module.exports = app => {
     })
   })
 
-   const answerfollowdb = require("../../plugins/answerfollowdb")
-   const answeragreedb = require("../../plugins/answeragreedb")
+  const answerfollowdb = require("../../plugins/answerfollowdb")
+  const answeragreedb = require("../../plugins/answeragreedb")
 
-   // 获取用户关注回答列表
-   router.post('/answer/follow/list/:userid', (req, res) => {
+  // 获取用户关注回答列表
+  router.post('/answer/follow/list/:userid', (req, res) => {
     answerfollowdb.findByUserid(req.params.userid, [], (dbresult, field) => {
       if (dbresult[0]) {
         answerdb.findsByAnswerid(dbresult, [], (result, fields) => {
@@ -253,12 +261,18 @@ module.exports = app => {
       console.log("判断是否存在")
       console.log(results)
       if (results[0] == null || results[0] == '') {
-        answerfollowdb.insert(req.body,[],(result,fields) => {
-          let data = {}
-          data.success = true
-          data.code = 1
-          data.msg="关注成功"
-          res.send(data)
+        answerfollowdb.insert(req.body, [], (result, fields) => {
+          answerdb.findById(req.body.answerid, [], (answerdetail, f) => {
+            let answer = answerdetail[0]
+            answer.follow += 1
+            answerdb.updateById(answer, answer.id, [], (r, f) => {
+              let data = {}
+              data.success = true
+              data.code = 1
+              data.msg = "关注成功"
+              res.send(data)
+            })
+          })
         })
       } else {
         console.log("已经存在")
@@ -270,34 +284,40 @@ module.exports = app => {
     // console.log(req.params)
   })
   // 取消用户关注话题
-    router.post('/cancel/follow/answer', (req, res) => {
-      answerfollowdb.isExit(req.body.answerid, req.body.userid, [], (results, fields) => {
-        console.log("判断是否存在")
-        console.log(results)
-        if (results[0] == null || results[0] == '') {
-          console.log("您还未关注")
-          let data = {}
-          data.success = false
-          data.msg = '未关注'
-          res.send(data)
-        } else {
-          answerfollowdb.deleteByUserid(req.body.answerid, req.body.userid,[],(result,fields) => {
-            let data = {}
-            data.success = true
-            data.code = 1
-            data.msg="取消关注成功"
-            res.send(data)
+  router.post('/cancel/follow/answer', (req, res) => {
+    answerfollowdb.isExit(req.body.answerid, req.body.userid, [], (results, fields) => {
+      console.log("判断是否存在")
+      console.log(results)
+      if (results[0] == null || results[0] == '') {
+        console.log("您还未关注")
+        let data = {}
+        data.success = false
+        data.msg = '未关注'
+        res.send(data)
+      } else {
+        answerfollowdb.deleteByUserid(req.body.answerid, req.body.userid, [], (result, fields) => {
+          answerdb.findById(req.body.answerid, [], (answerdetail, f) => {
+            let answer = answerdetail[0]
+            answer.follow -= 1
+            answerdb.updateById(answer, answer.id, [], (r, f) => {
+              let data = {}
+              data.success = true
+              data.code = 1
+              data.msg = "取消关注成功"
+              res.send(data)
+            })
           })
-         
-        }
-      })
-      // console.log(req.params)
+        })
+
+      }
     })
+    // console.log(req.params)
+  })
 
 
-    // 获取用户赞同回答列表
-   router.post('/answer/agree/list/:userid', (req, res) => {
-    answeragreedb .findByUserid(req.params.userid, [], (dbresult, field) => {
+  // 获取用户赞同回答列表
+  router.post('/answer/agree/list/:userid', (req, res) => {
+    answeragreedb.findByUserid(req.params.userid, [], (dbresult, field) => {
       if (dbresult[0]) {
         answerdb.findsByAnswerid(dbresult, [], (result, fields) => {
           console.log("打印结果")
@@ -324,12 +344,18 @@ module.exports = app => {
       console.log("判断是否存在")
       console.log(results)
       if (results[0] == null || results[0] == '') {
-        answeragreedb.insert(req.body,[],(result,fields) => {
-          let data = {}
-          data.success = true
-          data.code = 1
-          data.msg="关注成功"
-          res.send(data)
+        answeragreedb.insert(req.body, [], (result, fields) => {
+          answerdb.findById(req.body.answerid, [], (answerdetail, f) => {
+            let answer = answerdetail[0]
+            answer.agree -= 1
+            answerdb.updateById(answer, answer.id, [], (r, f) => {
+              let data = {}
+              data.success = true
+              data.code = 1
+              data.msg = "赞同成功"
+              res.send(data)
+            })
+          })
         })
       } else {
         console.log("已经存在")
@@ -341,29 +367,36 @@ module.exports = app => {
     // console.log(req.params)
   })
   // 取消赞同回答
-    router.post('/cancel/agree/answer', (req, res) => {
-      answeragreedb.isExit(req.body.answerid, req.body.userid, [], (results, fields) => {
-        console.log("判断是否存在")
-        console.log(results)
-        if (results[0] == null || results[0] == '') {
-          console.log("您还未赞同")
-          let data = {}
-          data.success = false
-          data.msg = '未赞同'
-          res.send(data)
-        } else {
-          answeragreedb.deleteByUserid(req.body.answerid, req.body.userid,[],(result,fields) => {
-            let data = {}
-            data.success = true
-            data.code = 1
-            data.msg="取消赞同成功"
-            res.send(data)
+  router.post('/cancel/agree/answer', (req, res) => {
+    answeragreedb.isExit(req.body.answerid, req.body.userid, [], (results, fields) => {
+      console.log("判断是否存在")
+      console.log(results)
+      if (results[0] == null || results[0] == '') {
+        console.log("您还未赞同")
+        let data = {}
+        data.success = false
+        data.msg = '未赞同'
+        res.send(data)
+      } else {
+        answeragreedb.deleteByUserid(req.body.answerid, req.body.userid, [], (result, fields) => {
+          answerdb.findById(req.body.answerid, [], (answerdetail, f) => {
+            let answer = answerdetail[0]
+            answer.agree += 1
+            answerdb.updateById(answer, answer.id, [], (r, f) => {
+              let data = {}
+              data.success = true
+              data.code = 1
+              data.msg = "取消赞同成功"
+              res.send(data)
+            })
           })
-      
-        }
-      })
-      // console.log(req.params)
+
+        })
+
+      }
     })
+    // console.log(req.params)
+  })
   // 验证token的请求
 
   // router.post('/categories/token',(req,res,next)=>{
