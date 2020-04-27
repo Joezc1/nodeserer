@@ -17,13 +17,7 @@ module.exports = {
         //每次使用的时候需要创建链接，数据操作完成之后要关闭连接
         let sql =""
         console.log(notice)
-        if(notice.createtime==""){
-            console.log("进来1")
-            sql = 'select id,title,detail,createtime,updatetime,author,video,type,cover from notices where id like "%'+notice.id+'%" and title like "%'+notice.title+'%" and author like "%'+notice.author+'%"'+ 'limit '+x+','+y;
-        }else{
-            console.log("进来2")
-            sql = 'select id,title,detail,createtime,updatetime,author,video,type,cover from notices where id like "%'+notice.id+'%" and title like "%'+notice.title+'%" and author like "%'+notice.author+'%" and createtime>'+'"'+notice.createtime+'" '+ 'limit '+x+','+y;
-        }
+        sql = 'select id,title,detail,createtime,updatetime,author,video,type,cover from notices where title like "%'+notice.title+'%"'+ 'limit '+x+','+y;
         console.log('打印查询语句')
         console.log(sql)
         var connection = mysql.createConnection(data);

@@ -48,6 +48,19 @@ module.exports = app => {
       res.send({ data: dbresult, success: true })
     })
   })
+
+  //搜索列表
+  router.post('/search/list', (req, res) => {
+    let x = (req.body.pageNo - 1) * req.body.pageSize
+    let y = req.body.pageSize
+    topicdb.find(req.body, x, y, [], (result, fields) => {
+      let data = {}
+      data.success = true
+      data.msg = '查询成功'
+      data.list = result
+      res.send(data)
+    })
+  })
   //获取推荐列表数据
   router.post('/topics', (req, res) => {
     let x = (req.body.pageNo - 1) * req.body.pageSize
@@ -124,7 +137,7 @@ module.exports = app => {
       console.log("打印操作结果")
       // topicid变化的数值
       console.log(dbresult.insertId)
-      tagdb.insert(req.body.tag,dbresult.insertId,req.body.userid,[],dbresult => {
+      tagdb.insert(req.body.tag, dbresult.insertId, req.body.userid, [], dbresult => {
         let data = {}
         data.success = 'true'
         data.msg = '新建成功'
@@ -237,13 +250,22 @@ module.exports = app => {
     answerfollowdb.findByUserid(req.params.userid, [], (dbresult, field) => {
       if (dbresult[0]) {
         answerdb.findsByAnswerid(dbresult, [], (result, fields) => {
-          console.log("打印结果")
-          console.log(result)
-          let data = {}
-          data.success = true
-          data.msg = '查询成功'
-          data.list = result
-          res.send(data)
+          if(result[0] == null || result[0] == undefined){
+            let data = {}
+            data.success = true
+            data.msg = '查询成功'
+            data.list = []
+            res.send(data)
+          }else{
+            console.log("打印结果")
+            console.log(result)
+            let data = {}
+            data.success = true
+            data.msg = '查询成功'
+            data.list = result
+            res.send(data)
+          }
+         
         })
       } else {
         let data = {}
@@ -265,6 +287,8 @@ module.exports = app => {
           answerdb.findById(req.body.answerid, [], (answerdetail, f) => {
             let answer = answerdetail[0]
             answer.follow += 1
+            answer.createtime = utiljs.parseTime(answer.createtime)
+            answer.updatetime = utiljs.parseTime(answer.updatetime)
             answerdb.updateById(answer, answer.id, [], (r, f) => {
               let data = {}
               data.success = true
@@ -299,6 +323,10 @@ module.exports = app => {
           answerdb.findById(req.body.answerid, [], (answerdetail, f) => {
             let answer = answerdetail[0]
             answer.follow -= 1
+            answer.createtime = utiljs.parseTime(answer.createtime)
+            answer.updatetime = utiljs.parseTime(answer.updatetime)
+            console.log("取消用户关注")
+            console.log(answer)
             answerdb.updateById(answer, answer.id, [], (r, f) => {
               let data = {}
               data.success = true
@@ -321,12 +349,20 @@ module.exports = app => {
       if (dbresult[0]) {
         answerdb.findsByAnswerid(dbresult, [], (result, fields) => {
           console.log("打印结果")
-          console.log(result)
-          let data = {}
-          data.success = true
-          data.msg = '查询成功'
-          data.list = result
-          res.send(data)
+          if(result[0] == null || result[0] == undefined){
+            let data = {}
+            data.success = true
+            data.msg = '查询成功'
+            data.list = []
+            res.send(data)
+          }else{
+            console.log(result)
+            let data = {}
+            data.success = true
+            data.msg = '查询成功'
+            data.list = result
+            res.send(data)
+          }
         })
       } else {
         let data = {}
@@ -348,6 +384,8 @@ module.exports = app => {
           answerdb.findById(req.body.answerid, [], (answerdetail, f) => {
             let answer = answerdetail[0]
             answer.agree -= 1
+            answer.createtime = utiljs.parseTime(answer.createtime)
+            answer.updatetime = utiljs.parseTime(answer.updatetime)
             answerdb.updateById(answer, answer.id, [], (r, f) => {
               let data = {}
               data.success = true
@@ -382,6 +420,8 @@ module.exports = app => {
           answerdb.findById(req.body.answerid, [], (answerdetail, f) => {
             let answer = answerdetail[0]
             answer.agree += 1
+            answer.createtime = utiljs.parseTime(answer.createtime)
+            answer.updatetime = utiljs.parseTime(answer.updatetime)
             answerdb.updateById(answer, answer.id, [], (r, f) => {
               let data = {}
               data.success = true
@@ -408,7 +448,45 @@ module.exports = app => {
   //   console.log(req.body)
   // })
 
+  const commentdb = require("../../plugins/commentdb")
+  // 回答评论模块
+  router.get('/comment/list/:answerid',(req,res) => {
+    commentdb.find(req.params.answerid,[],(result,fislde) => {
+      if(result[0] == undefined || result[0] == null){
+        let data = {}
+        data.success = false
+        data.msg="查询错误"
+        res.send(data)
+      }else{
+        userdb.findsByList(result,[],(r,f) => {
+          let list = []
+          result.forEach((element,index,arr) => {
+            element.userinfo = r[index]
+            list.push(element)
+          });
+          let data = {}
+          data.list = list
+          data.msg = "查询成功"
+          data.success = true
+          res.send(data)
+        })
+       
+      }
+    })
+  })
 
+  // 新建评论
+  router.post('/save/comment',(req,res) => {
+    req.body.createtime =  moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+    commentdb.insert(req.body,[],(r,f) => {
+      let data = {}
+      console.log("新建评论")
+      data.success = true
+      data.msg = "新建成功"
+      console.log(r)
+      res.send(data)
+    })
+  })
 
   // 用户模块
   // 用户详情
@@ -433,7 +511,16 @@ module.exports = app => {
       })
     })
   })
-
+  // 修改用户
+  router.post("/save/user",(req,res) => {
+    userdb.updateById(req.body,req.body.userid,[],(result,fileds) => {
+      console.log(result)
+      let data = {}
+      data.msg = '修改成功'
+      data.success = true
+      res.send(data)
+    })
+  })
   // 收藏用户
   router.post('/follow/user', (req, res) => {
     userfollowdb.isExit(req.body.userid, req.body.followeduserid, [], (results) => {
@@ -479,15 +566,27 @@ module.exports = app => {
   // 获取用户关注话题
   router.post('/follow/user/list/:userid', (req, res) => {
     userfollowdb.findByUserid(req.params.userid, [], (dbresult, field) => {
+      console.log(dbresult)
       if (dbresult[0]) {
         userfollowdb.findsByUserid(dbresult, [], (result, fields) => {
-          console.log("打印结果")
+          console.log("打印result")
           console.log(result)
-          let data = {}
-          data.success = true
-          data.msg = '查询成功'
-          data.list = result
-          res.send(data)
+          if (result[0] == undefined || result[0] == null) {
+            let data = {}
+            console.log("2222")
+            data.success = true
+            data.msg = '查询成功'
+            data.list = []
+            res.send(data)
+          } else {
+            console.log("3333")
+            let data = {}
+            data.success = true
+            data.msg = '查询成功'
+            data.list = result
+            res.send(data)
+          }
+
         })
       } else {
         let data = {}
@@ -569,6 +668,19 @@ module.exports = app => {
       }
     })
   })
+
+  const sysdb = require("../../plugins/systypedb")
+  // 插入设备类型
+  router.post('/save/sysinfo', (req, res) => {
+    req.body.createtime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+    sysdb.insert(req.body, [], (result, fields) => {
+      let data = {}
+      data.success = true
+      data.msg = '插入成功'
+      res.send(data)
+    })
+  })
+
   //用户模块,微信授权登陆
   router.post('/user/login/:code', (req, res) => {
     let user = {}
@@ -643,8 +755,8 @@ module.exports = app => {
   router.post('/upload', upload.single('file'), async (req, res) => {
     console.log("监听文件上传")
     const file = req.file
-    // file.url = `http://39.106.159.120:8080/uploads/${file.filename}`
-    file.url = `http://localhost:8080/uploads/${file.filename}`
+    file.url = `http://39.106.159.120:8080/uploads/${file.filename}`
+    // file.url = `http://localhost:8080/uploads/${file.filename}`
     res.send(file)
   })
 

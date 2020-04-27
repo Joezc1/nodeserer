@@ -108,7 +108,7 @@ module.exports = {
     insert: function (answer, params, callback) {
         //每次使用的时候需要创建链接，数据操作完成之后要关闭连接
         // let sql = `insert into answers(title,detail,createtime,author) values`
-        let sql = "insert into answers(abstract,agree,createtime,comments,answer,topicid,userid) values('" + answer.abstract + "','" + answer.agree + "','" + answer.createtime + "','"+answer.follow+"','" + answer.comments + "','" + answer.answer + "','" + answer.topicid + "','" + answer.userid + "')"
+        let sql = "insert into answers(abstract,agree,createtime,comments,answer,topicid,userid) values('" + answer.abstract + "','" + answer.agree + "','" + answer.createtime + "','" + answer.comments + "','" + answer.answer + "','" + answer.topicid + "','" + answer.userid + "')"
         console.log("打印操作结果")
         console.log(sql)
         var connection = mysql.createConnection(data);

@@ -446,6 +446,20 @@ module.exports = app => {
     //     })
     // })
 
+    
+  const sysdb = require("../../plugins/systypedb")
+  // 获取设备类型
+  router.post('/sysinfo/list',(req,res) => {
+    req.body.createtime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+    sysdb.find([],(result,fields) => {
+      let data = {}
+      data.success = true
+      data.msg = '获取成功'
+      data.list = result
+      res.send(data)
+    })
+  })
+
     //用户管理
     router.post('/user/:id', [], (req, res) => {
         userdb.findById(req.params.id, [], (dbresult, fields) => {
@@ -557,8 +571,8 @@ module.exports = app => {
     app.post('/admin/api/upload', upload.single('file'), async (req, res) => {
         console.log("监听图片上传")
         const file = req.file
-        file.url = `http://localhost:8080/uploads/${file.filename}`
-        // file.url = `http://39.106.159.120:8080/uploads/${file.filename}`
+        // file.url = `http://localhost:8080/uploads/${file.filename}`
+        file.url = `http://39.106.159.120:8080/uploads/${file.filename}`
         res.send({ 'data': file })
     })
 
