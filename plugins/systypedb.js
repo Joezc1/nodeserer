@@ -13,10 +13,10 @@ var data = {
 //向外暴露方法
 // 分页查询全部话题信息
 module.exports = {
-    find: function (params, callback) {
+    find: function (type,params, callback) {
         //每次使用的时候需要创建链接，数据操作完成之后要关闭连接
         let sql = ""
-        sql = 'select id,type,createtime,userid from sys_type';
+        sql = `select count(id) from sys_type where type=${type}`;
         // if (topic.createtime == "") {
         //     console.log("进来1")
         // } else {

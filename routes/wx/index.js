@@ -130,19 +130,41 @@ module.exports = app => {
   router.post('/save/topic', (req, res) => {
     req.body.createtime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
     req.body.abstract = req.body.topic.substring(0, 20)
-    req.body.type = 2
+    req.body.type = 1
     console.log("新建话题")
     console.log(req.body)
     topicdb.insert(req.body, [], (dbresult, fields) => {
       console.log("打印操作结果")
       // topicid变化的数值
       console.log(dbresult.insertId)
-      tagdb.insert(req.body.tag, dbresult.insertId, req.body.userid, [], dbresult => {
-        let data = {}
-        data.success = 'true'
-        data.msg = '新建成功'
-        res.send(data)
+
+      tagdb.findByName(req.body.tag,[],(result,ff) => {
+	console.log("打印num")
+	console.log(result[0])
+        if(result[0]){
+	  let obj = result[0]
+	   console.log("111111111111111111")
+	   console.log(obj)
+	    console.log(obj.num)
+            obj.num = obj.num *1 + 1
+            tagdb.updateById(obj,obj.id,[],(r,f) => {
+              let data = {}
+              data.success = 'true'
+              data.msg = '新建成功'
+              res.send(data)
+            })
+        }else{
+	 console.log("222222222222222222222222")
+          tagdb.insert(req.body.tag, dbresult.insertId, req.body.userid, [], dbresult => {
+            let data = {}
+            data.success = 'true'
+            data.msg = '新建成功'
+            res.send(data)
+          })
+        }
       })
+     
+
     })
   })
   //查询话题详情
@@ -383,7 +405,7 @@ module.exports = app => {
         answeragreedb.insert(req.body, [], (result, fields) => {
           answerdb.findById(req.body.answerid, [], (answerdetail, f) => {
             let answer = answerdetail[0]
-            answer.agree -= 1
+            answer.agree += 1
             answer.createtime = utiljs.parseTime(answer.createtime)
             answer.updatetime = utiljs.parseTime(answer.updatetime)
             answerdb.updateById(answer, answer.id, [], (r, f) => {
@@ -419,7 +441,7 @@ module.exports = app => {
         answeragreedb.deleteByUserid(req.body.answerid, req.body.userid, [], (result, fields) => {
           answerdb.findById(req.body.answerid, [], (answerdetail, f) => {
             let answer = answerdetail[0]
-            answer.agree += 1
+            answer.agree -= 1
             answer.createtime = utiljs.parseTime(answer.createtime)
             answer.updatetime = utiljs.parseTime(answer.updatetime)
             answerdb.updateById(answer, answer.id, [], (r, f) => {

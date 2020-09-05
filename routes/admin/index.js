@@ -183,7 +183,7 @@ module.exports = app => {
     })
     //修改回答
     router.post('/update/answer/:id', [], (req, res) => {
-        req.body.updatetime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        req.body.createtime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
         answerdb.updateById(req.body, req.params.id, [], (dbresult, fields) => {
             if (dbresult.affectedRows != 0) {
                 console.log(dbresult)
@@ -287,16 +287,16 @@ module.exports = app => {
                 console.log(user)
                 console.log(result[0])
                 if (user.password == result[0].password) {
-                    if (result[0].login == 1) {
-                        console.log("11111111111111")
-                        console.log("账号占用")
-                        let data = {}
-                        data.success = false
-                        data.msg = "该账号被占用"
-                        // 账号不存在
-                        data.code = -2
-                        return res.send(data)
-                    } else {
+                    // if (result[0].login == 1) {
+                    //     console.log("11111111111111")
+                    //     console.log("账号占用")
+                    //     let data = {}
+                    //     data.success = false
+                    //     data.msg = "该账号被占用"
+                    //     // 账号不存在
+                    //     data.code = -2
+                    //     return res.send(data)
+                    // } else {
                         console.log("22222222222222")
                         console.log("用户已存在")
                         // let jwt = new jwtUtil(user.name)
@@ -318,7 +318,7 @@ module.exports = app => {
                             // data.token = token
                             // res.send(data)                   
                         })
-                    }
+                    // }
                 } else {
                     console.log("33333333333333333")
                     console.log("用户或密码错误")
@@ -451,13 +451,38 @@ module.exports = app => {
   // 获取设备类型
   router.post('/sysinfo/list',(req,res) => {
     req.body.createtime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
-    sysdb.find([],(result,fields) => {
-      let data = {}
-      data.success = true
-      data.msg = '获取成功'
-      data.list = result
-      res.send(data)
+    sysdb.find(1,[],(result,fields) => {
+        sysdb.find(2,[],(results,file) => {
+
+            let list = []
+            for (let index in result[0]) {
+                list.push(result[0][index])
+            }
+            let list2 = []
+            for (let index in results[0]) {
+                list2.push(results[0][index])
+            }
+
+            let data = {}
+            data.success = true
+            data.msg = '获取成功'
+            data.ios = list[0]
+            data.and = list2[0]
+            res.send(data)
+        })
+ 
     })
+  })
+
+  const tagdb = require("../../plugins/tagsdb")
+  router.get('/taginfo/list',(req,res) => {
+      tagdb.find([],(r,f) => {
+          let data = {}
+          data.success = true
+          data.list = r
+          data.msg = '查询成功'
+          res.send(data)
+      })
   })
 
     //用户管理
